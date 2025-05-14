@@ -1,39 +1,36 @@
 function startTone() {
 	Tone.start().then(() => { 
         console.log("audio is ready"); 
-        PlayRiff();
+        playScrewedTheme();
     });
 }
 
-function PlayRiff() {
-    const synth = new Tone.Synth({
-      oscillator: { type: "sine" },
-      envelope: { attack: 0.01, decay: 0.2, sustain: 0.3, release: 0.8 }
-    }).toDestination();
+async function playScrewedTheme() {
+    await Tone.start();
   
     const bass = new Tone.MonoSynth({
       oscillator: { type: "square" },
-      filter: { Q: 2, type: "lowpass", rolloff: -24 },
-      envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 1 },
-      filterEnvelope: { attack: 0.01, decay: 0.1, sustain: 0.8, release: 1, baseFrequency: 200, octaves: 2.6 }
+      envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 1 }
     }).toDestination();
   
-    const now = Tone.now();
+    const keys = new Tone.Synth({
+      oscillator: { type: "triangle" },
+      envelope: { attack: 0.5, release: 1 }
+    }).toDestination();
   
-    // Moody minor riff (inspired feel)
-    synth.triggerAttackRelease("C4", "8n", now);
-    synth.triggerAttackRelease("Eb4", "8n", now + 0.5);
-    synth.triggerAttackRelease("G4", "8n", now + 1);
-    synth.triggerAttackRelease("Bb3", "8n", now + 1.5);
-    synth.triggerAttackRelease("G4", "4n", now + 2);
+    const delay = new Tone.FeedbackDelay("8n", 0.4).toDestination();
+    keys.connect(delay);
   
-    // Looped bass (C - G - Bb - Ab)
-    const bassLoop = new Tone.Loop((time) => {
-      const notes = ["C2", "G1", "Bb1", "Ab1"];
-      const note = notes[Math.floor(Math.random() * notes.length)];
-      bass.triggerAttackRelease(note, "8n", time);
-    }, "4n").start(0);
+    Tone.Transport.bpm.value = 40;
   
-    Tone.Transport.bpm.value = 90;
+    const melody = ["C3", null, "E3", null, "G3", null, "C3", null];
+  
+    const seq = new Tone.Sequence((time, note) => {
+      if (note) {
+        keys.triggerAttackRelease(note, "8n", time);
+        bass.triggerAttackRelease(note.replace("3", "1"), "4n", time);
+      }
+    }, melody, "4n").start(0);
+  
     Tone.Transport.start();
   }
